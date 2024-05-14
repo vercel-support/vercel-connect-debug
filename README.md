@@ -13,5 +13,5 @@ Run the below mentioned command, depending on your operating system, from a term
 ### Mac/Linux (Bash/ZSH):
     curl -s https://raw.githubusercontent.com/vercel-support/vercel-connect-debug/main/vercel-debug.sh | bash | tee vercel-debug.txt
 
-### Windows (Powershell): 
+### Windows 10/11 (Powershell): 
     Invoke-RestMethod -Uri https://raw.githubusercontent.com/vercel-support/vercel-connect-debug/main/vercel-debug.ps1 | Invoke-Expression | tee vercel-debug.txt

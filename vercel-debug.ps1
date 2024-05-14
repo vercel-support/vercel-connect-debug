@@ -45,8 +45,11 @@ ForEach ($i in "76.76.21.9","76.76.21.22","76.76.21.61","76.76.21.93","76.76.21.
   echo "+------- Testing $i "
   echo "" 
   ping -n 4 $i
-  echo "" 
-  tracert -w 1 -h 30 $i
+  # Skip traceroute if ping succeeds
+  if ($1 -eq $false) {
+   echo "" 
+    tracert -w 1 -h 30 $i
+  }
   echo "+---------------------------------------"
   echo ""
 }

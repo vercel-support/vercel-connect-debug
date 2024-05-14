@@ -49,8 +49,12 @@ do
   echo "├─────── Testing $i "
   echo "" 
   ping -c 4 $i
-  echo "" 
-  traceroute -w 1 -m 30 -I $i
+  # Skip traceroute if ping succeeds
+  if [ "$?" != 0 ]
+  then
+    echo "" 
+    traceroute -w 1 -m 30 -I $i
+  fi
   echo "└───────────────────────────────────────"
   echo ""
 done
