@@ -18,7 +18,7 @@ echo "|"
 # Show affected domain
 echo "| Domain to test: ${domain} "
 # Capture time/date
-echo "| Timestamp: $(get-date)"
+echo "| Timestamp: $(get-date -AsUTC)"
 echo "+---------------------------------------"
 echo ""
 

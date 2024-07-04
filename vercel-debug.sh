@@ -21,7 +21,7 @@ echo "│"
 # Show affected domain
 echo "│ Domain to test: ${domain} "
 # Capture time/date
-echo "│ Timestamp: $(date)"
+echo "│ Timestamp: $(date -u)"
 echo "└───────────────────────────────────────"
 echo ""
 
