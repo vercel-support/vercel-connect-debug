@@ -18,7 +18,7 @@ echo "|"
 # Show affected domain
 echo "| Domain to test: ${domain} "
 # Capture time/date
-echo "| Timestamp (UTC): $(get-date -AsUTC)"
+echo "| Timestamp (UTC): $((get-date).ToUniversalTime())"
 echo "| Timestamp (Local): $(get-date)"
 echo "+---------------------------------------"
 echo ""
