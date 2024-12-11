@@ -2,6 +2,10 @@
 # Run these commands from the affected/problematic network
 # Once completed, send the file to Vercel support
 
+#IP ranges
+default_range=("76.76.21.9" "76.76.21.22" "76.76.21.61" "76.76.21.93" "76.76.21.98" "76.76.21.123" "76.76.21.142" "76.76.21.164" "76.76.21.241")
+hobby_range=("216.198.79.1" "216.198.79.65" "216.198.79.129" "216.198.79.193" "64.29.17.1" "64.29.17.65" "64.29.17.129" "64.29.17.193")
+
 # Ask for domain and don't accept no domain
 # Also, we need to ensure not to pass an URL (https://example.com/path) 
 # rather than only the domain name
@@ -11,6 +15,14 @@ do
   echo "Domain to test (e.g. example.com): "
   read domain </dev/tty
 done
+
+# Select relevant IP range
+if [[ $domain == *.vercel.app ]]
+then
+  ip_range=${hobby_range[@]}
+else 
+  ip_range=${default_range[@]}
+fi
 
 # Measure time 
 start=`date +%s`
@@ -41,12 +53,12 @@ echo "├─────── Testing 76.76.21.21 "
 echo "" 
 ping -c 4 76.76.21.21
 echo "" 
-traceroute -w 1 -m 30 -I 76.76.21.21
+#traceroute -w 1 -m 30 -I 76.76.21.21
 echo "└───────────────────────────────────────"
 echo ""
 
 # Test reachability to Vercel CNAME records
-for i in "76.76.21.9" "76.76.21.22" "76.76.21.61" "76.76.21.93" "76.76.21.98" "76.76.21.123" "76.76.21.142" "76.76.21.164" "76.76.21.241"
+for i in $ip_range[@]
 do 
   echo "┌───────────────────────────────────────"
   echo "├─────── Testing $i "
@@ -90,7 +102,7 @@ echo ""
 echo "┌───────────────────────────────────────"
 echo "├─────── Output of ${domain}"
 echo "" 
-curl -svk https://${domain} --stderr -
+#curl -svk https://${domain} --stderr -
 echo ""
 echo "└───────────────────────────────────────"
 echo ""

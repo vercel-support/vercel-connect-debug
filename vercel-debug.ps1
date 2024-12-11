@@ -1,12 +1,23 @@
 # Run these commands from the affected/problematic network
 # Once completed, send the file to Vercel support
 
+#IP ranges
+$default_range="76.76.21.9","76.76.21.22","76.76.21.61","76.76.21.93","76.76.21.98","76.76.21.123","76.76.21.142","76.76.21.164","76.76.21.241"
+$hobby_range="216.198.79.1","216.198.79.65","216.198.79.129","216.198.79.193","64.29.17.1","64.29.17.65","64.29.17.129","64.29.17.193"
+
 # Ask for domain and don't accept no domain
 # Also, we need to ensure not to pass an URL (https://example.com/path) 
 # rather than only the domain name
 $domain = $null
 while ((!$domain) -or ($domain -Match "`/")) {
     $domain = Read-Host "Domain to test (e.g. example.com): "
+}
+
+# Select relevant IP range
+if ($domain -match '.vercel.app$') {
+  $ip_range=$hobby_range 
+} else {
+  $ip_range=$default_range
 }
 
 # Measure time 
@@ -27,7 +38,7 @@ echo ""
 echo "+---------------------------------------"
 echo "+------- IP Information "
 echo "" 
-curl.exe -s https://ipinfo.io/
+prcurl.exe -s https://ipinfo.io/
 echo ""
 echo "+---------------------------------------"
 echo ""
@@ -36,14 +47,14 @@ echo ""
 echo "+---------------------------------------"
 echo "+------- Testing 76.76.21.21 "
 echo "" 
-ping -n 4 76.76.21.21
+pwsh ping -n 4 76.76.21.21
 echo "" 
 tracert -w 1 -h 30 76.76.21.21
 echo "+---------------------------------------"
 echo ""
 
 # Test reachability to Vercel CNAME records
-ForEach ($i in "76.76.21.9","76.76.21.22","76.76.21.61","76.76.21.93","76.76.21.98","76.76.21.123","76.76.21.142","76.76.21.164","76.76.21.241") {
+ForEach ($i in $ip_range) {
   echo "+---------------------------------------"
   echo "+------- Testing $i "
   echo "" 
