@@ -38,7 +38,7 @@ echo ""
 echo "+---------------------------------------"
 echo "+------- IP Information "
 echo "" 
-prcurl.exe -s https://ipinfo.io/
+curl.exe -s https://ipinfo.io/
 echo ""
 echo "+---------------------------------------"
 echo ""
@@ -47,7 +47,7 @@ echo ""
 echo "+---------------------------------------"
 echo "+------- Testing 76.76.21.21 "
 echo "" 
-pwsh ping -n 4 76.76.21.21
+ping -n 4 76.76.21.21
 echo "" 
 tracert -w 1 -h 30 76.76.21.21
 echo "+---------------------------------------"

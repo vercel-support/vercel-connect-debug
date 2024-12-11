@@ -102,7 +102,7 @@ echo ""
 echo "┌───────────────────────────────────────"
 echo "├─────── Output of ${domain}"
 echo "" 
-#curl -svk https://${domain} --stderr -
+curl -svk https://${domain} --stderr -
 echo ""
 echo "└───────────────────────────────────────"
 echo ""
