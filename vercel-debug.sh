@@ -53,7 +53,7 @@ echo "├─────── Testing 76.76.21.21 "
 echo "" 
 ping -c 4 76.76.21.21
 echo "" 
-#traceroute -w 1 -m 30 -I 76.76.21.21
+traceroute -w 1 -m 30 -I 76.76.21.21
 echo "└───────────────────────────────────────"
 echo ""
 
