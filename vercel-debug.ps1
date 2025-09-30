@@ -1,10 +1,6 @@
 # Run these commands from the affected/problematic network
 # Once completed, send the file to Vercel support
 
-#IP ranges
-$default_range="66.33.60.33", "66.33.60.34", "66.33.60.35", "66.33.60.65", "66.33.60.66", "66.33.60.67", "66.33.60.129", "66.33.60.130", "66.33.60.193", "66.33.60.194", "76.76.21.9", "76.76.21.22", "76.76.21.61", "76.76.21.93", "76.76.21.98", "76.76.21.123", "76.76.21.142", "76.76.21.164", "76.76.21.241"
-$hobby_range="216.198.79.1","216.198.79.65","216.198.79.129","216.198.79.193","64.29.17.1","64.29.17.65","64.29.17.129","64.29.17.193"
-
 # Ask for domain and don't accept no domain
 # Also, we need to ensure not to pass an URL (https://example.com/path) 
 # rather than only the domain name
@@ -13,11 +9,25 @@ while ((!$domain) -or ($domain -Match "`/")) {
     $domain = Read-Host "Domain to test (e.g. example.com): "
 }
 
-# Select relevant IP range
-if ($domain -match '.vercel.app$') {
-  $ip_range=$hobby_range 
+# Lookup the DNS record to return the IP Ranges
+echo "+---------------------------------------"
+echo "+------- Fetching IP Addresses"
+echo "|" 
+# Make curl request to the IP Range Lookup API
+$ip_addresses = curl.exe -s -X POST "https://ip-ranges.vercel.support" -d "${domain}"
+# Check if API call failed, returned empty, or returned special error responses
+# If any of these conditions are true, exit immediately without running tests
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($ip_addresses) -or $ip_addresses -eq "Not on Vercel" -or $ip_addresses -eq "DNS lookup failed" -or $ip_addresses -like "*Too Many Requests*") {
+    echo "| Range lookup failed - $(if ([string]::IsNullOrEmpty($ip_addresses)) { 'No response from API' } else { $ip_addresses })"
+    echo "+---------------------------------------"
+    echo ""
+    return
 } else {
-  $ip_range=$default_range
+    echo "| ${domain} IP range: $ip_addresses"
+    echo "+---------------------------------------"
+    echo ""
+    # Parse response and convert to array
+    $ip_range = ($ip_addresses -split ',').Trim()
 }
 
 # Measure time 
@@ -43,25 +53,21 @@ echo ""
 echo "+---------------------------------------"
 echo ""
 
-# Test reachability to Vercel A record
-echo "+---------------------------------------"
-echo "+------- Testing 76.76.21.21 "
-echo "" 
-ping -n 4 76.76.21.21
-echo "" 
-tracert -w 1 -h 30 76.76.21.21
-echo "+---------------------------------------"
-echo ""
-
 # Test reachability to Vercel CNAME records
 ForEach ($i in $ip_range) {
   echo "+---------------------------------------"
   echo "+------- Testing $i "
-  echo "" 
+  echo "Checking headers via $i" 
+  # Get the headers of the site, bypassing DNS resolution and querying domain via IP directly
+  curl.exe -svko NUL https://$domain --connect-to ::$i --max-time 3 --stderr -
+  # Ping the IP
+  echo ""
+  echo "Checking ping to $i" 
   ping -n 4 $i
   # Skip traceroute if ping succeeds
-  if ($? -eq $false) {
-   echo "" 
+  if ($LASTEXITCODE -ne 0) {
+   echo ""
+   echo "Checking tracert to $i" 
     tracert -w 1 -h 30 $i
   }
   echo "+---------------------------------------"
@@ -100,12 +106,12 @@ $duration = ($end-$start)
 echo ""
 
 echo "+---------------------------------------"
-echo "| Time elapsed: $duration seconds"
+echo "| Time elapsed: $([math]::Round($duration.TotalSeconds, 1)) seconds"
 echo "|" 
 echo "+------- FINISHED"
 echo "+---------------------------------------"
 echo ""
 echo ""
 echo ""
-echo "File can be found at $(pwd)\vercel-debug.txt"
+echo "File can be found at $(Get-Location)\vercel-debug.txt"
 echo ""

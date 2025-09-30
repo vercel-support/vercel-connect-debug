@@ -1,10 +1,6 @@
-#/bin/bash
+#!/bin/bash
 # Run these commands from the affected/problematic network
 # Once completed, send the file to Vercel support
-
-#IP ranges
-default_range=("66.33.60.33" "66.33.60.34" "66.33.60.35" "66.33.60.65" "66.33.60.66" "66.33.60.67" "66.33.60.129" "66.33.60.130" "66.33.60.193" "66.33.60.194" "76.76.21.9" "76.76.21.22" "76.76.21.61" "76.76.21.93" "76.76.21.98" "76.76.21.123" "76.76.21.142" "76.76.21.164" "76.76.21.241")
-hobby_range=("216.198.79.1" "216.198.79.65" "216.198.79.129" "216.198.79.193" "64.29.17.1" "64.29.17.65" "64.29.17.129" "64.29.17.193")
 
 # Ask for domain and don't accept no domain
 # Also, we need to ensure not to pass an URL (https://example.com/path) 
@@ -16,16 +12,29 @@ do
   read domain </dev/tty
 done
 
-# Select relevant IP range
-if [[ $domain == *.vercel.app ]]
-then
-  ip_range=${hobby_range[@]}
-else 
-  ip_range=${default_range[@]}
+# Lookup the DNS record to return the IP Ranges
+echo "┌───────────────────────────────────────"
+echo "├─────── Fetching IP Addresses"
+echo "│" 
+# Make curl request to the IP Range Lookup API
+ip_addresses=$(curl -s -X POST "https://ip-ranges.vercel.support" -d "${domain}")
+# Check if API call failed, returned empty, or returned special error responses
+# If any of these conditions are true, exit immediately without running tests
+if [ $? -ne 0 ] || [ -z "$ip_addresses" ] || [ "$ip_addresses" = "Not on Vercel" ] || [ "$ip_addresses" = "DNS lookup failed" ] || [[ "$ip_addresses" == *"Too Many Requests"* ]]; then
+    echo "│ Range lookup failed - ${ip_addresses:-No response from API}"
+    echo "└───────────────────────────────────────"
+    echo ""
+    exit 0
+else
+    echo "│ ${domain} IP range: $ip_addresses"
+    echo "└───────────────────────────────────────"
+    echo ""
+    # Parse response and convert to array
+    ip_range=($(echo "$ip_addresses" | tr ',' ' '))
 fi
 
 # Measure time 
-start=`date +%s`
+start=$(date +%s)
 
 echo "┌───────────────────────────────────────"
 echo "├─────── STARTING"
@@ -34,7 +43,7 @@ echo "│"
 echo "│ Domain to test: ${domain} "
 # Capture time/date
 echo "│ Timestamp (UTC): $(date -u)"
-echo "| Timestamp (Local): $(date)"
+echo "│ Timestamp (Local): $(date)"
 echo "└───────────────────────────────────────"
 echo ""
 
@@ -47,27 +56,23 @@ echo ""
 echo "└───────────────────────────────────────"
 echo ""
 
-# Test reachability to Vercel A record
-echo "┌───────────────────────────────────────"
-echo "├─────── Testing 76.76.21.21 "
-echo "" 
-ping -c 4 76.76.21.21
-echo "" 
-traceroute -w 1 -m 30 -I 76.76.21.21
-echo "└───────────────────────────────────────"
-echo ""
-
 # Test reachability to Vercel CNAME records
-for i in $ip_range
+for i in "${ip_range[@]}"
 do 
   echo "┌───────────────────────────────────────"
   echo "├─────── Testing $i "
-  echo "" 
+  echo "Checking headers via $i"  
+  # Get the headers of the site, bypassing DNS resolution and querying domain via IP directly
+  curl -svko /dev/null https://${domain} --connect-to ::${i} --max-time 3 --stderr -
+  # Ping the IP
+  echo ""
+  echo "Checking ping to $i" 
   ping -c 4 $i
   # Skip traceroute if ping succeeds
-  if [ "$?" != 0 ]
+  if [ $? -ne 0 ]
   then
-    echo "" 
+    echo ""
+    echo "Checking tracert to $i" 
     traceroute -w 1 -m 30 -I $i
   fi
   echo "└───────────────────────────────────────"
@@ -108,7 +113,7 @@ echo "└───────────────────────�
 echo ""
 
 # Calculate duration
-end=`date +%s`
+end=$(date +%s)
 duration=$((end-start))
 
 echo ""
