@@ -20,7 +20,7 @@ echo "│"
 ip_addresses=$(curl -s -X POST "https://ip-ranges.vercel.support" -d "${domain}")
 # Check if API call failed, returned empty, or returned special error responses
 # If any of these conditions are true, exit immediately without running tests
-if [ $? -ne 0 ] || [ -z "$ip_addresses" ] || [ "$ip_addresses" = "Not on Vercel" ] || [ "$ip_addresses" = "DNS lookup failed" ]; then
+if [ $? -ne 0 ] || [ -z "$ip_addresses" ] || [ "$ip_addresses" = "Not on Vercel" ] || [ "$ip_addresses" = "DNS lookup failed" ] || [[ "$ip_addresses" == *"Too Many Requests"* ]]; then
     echo "│ Range lookup failed - ${ip_addresses:-No response from API}"
     echo "└───────────────────────────────────────"
     echo ""
