@@ -4,7 +4,6 @@
 # Ask for domain and don't accept no domain
 # Also, we need to ensure not to pass an URL (https://example.com/path) 
 # rather than only the domain name
-$domain = $null
 while ((!$domain) -or ($domain -Match "`/")) {
     $domain = Read-Host "Domain to test (e.g. example.com): "
 }
