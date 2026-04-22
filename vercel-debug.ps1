@@ -9,19 +9,27 @@ while ((!$domain) -or ($domain -Match "`/")) {
     $domain = Read-Host "Domain to test (e.g. example.com): "
 }
 
+# Measure time
+$start = get-date
+
 # Lookup the DNS record to return the IP Ranges
 echo "+---------------------------------------"
 echo "+------- Fetching IP Addresses"
-echo "|" 
+echo "|"
 # Make curl request to the IP Range Lookup API
 $ip_addresses = curl.exe -s -X POST "https://ip-ranges.vercel.support" -d "${domain}"
 # Check if API call failed, returned empty, or returned special error responses
-# If any of these conditions are true, exit immediately without running tests
+# If any of these conditions are true, skip the per-IP reachability tests,
+# but still gather diagnostic info (reporter IP/ASN, DNS resolution, response body)
+# since a "Not on Vercel" result often indicates DNS-level hijacking/interception.
+$range_lookup_failed = $false
 if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($ip_addresses) -or $ip_addresses -eq "Not on Vercel" -or $ip_addresses -eq "DNS lookup failed" -or $ip_addresses -like "*Too Many Requests*") {
-    echo "| Range lookup failed - $(if ([string]::IsNullOrEmpty($ip_addresses)) { 'No response from API' } else { $ip_addresses })"
+    $range_lookup_failed = $true
+    $failure_reason = if ([string]::IsNullOrEmpty($ip_addresses)) { 'No response from API' } else { $ip_addresses }
+    echo "| Range lookup failed - $failure_reason"
+    echo "| Per-IP reachability tests will be skipped, but DNS/IP diagnostics will still run below."
     echo "+---------------------------------------"
     echo ""
-    return
 } else {
     echo "| ${domain} IP range: $ip_addresses"
     echo "+---------------------------------------"
@@ -30,12 +38,9 @@ if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrEmpty($ip_addresses) -or $ip_addre
     $ip_range = ($ip_addresses -split ',').Trim()
 }
 
-# Measure time 
-$start = get-date
-
 echo "+---------------------------------------"
 echo "+------- STARTING"
-echo "|" 
+echo "|"
 # Show affected domain
 echo "| Domain to test: ${domain} "
 # Capture time/date
@@ -44,34 +49,37 @@ echo "| Timestamp (Local): $(get-date)"
 echo "+---------------------------------------"
 echo ""
 
-# Output the reporters IP address
+# Output the reporters IP address / ASN (useful for identifying the ISP
+# responsible for any interception)
 echo "+---------------------------------------"
 echo "+------- IP Information "
-echo "" 
+echo ""
 curl.exe -s https://ipinfo.io/
 echo ""
 echo "+---------------------------------------"
 echo ""
 
-# Test reachability to Vercel CNAME records
-ForEach ($i in $ip_range) {
-  echo "+---------------------------------------"
-  echo "+------- Testing $i "
-  echo "Checking headers via $i" 
-  # Get the headers of the site, bypassing DNS resolution and querying domain via IP directly
-  curl.exe -svko NUL https://$domain --connect-to ::$i --max-time 3 --stderr -
-  # Ping the IP
-  echo ""
-  echo "Checking ping to $i" 
-  ping -n 4 $i
-  # Skip traceroute if ping succeeds
-  if ($LASTEXITCODE -ne 0) {
-   echo ""
-   echo "Checking tracert to $i" 
-    tracert -w 1 -h 30 $i
+# Test reachability to Vercel CNAME records (only if the range lookup succeeded)
+if (-not $range_lookup_failed) {
+  ForEach ($i in $ip_range) {
+    echo "+---------------------------------------"
+    echo "+------- Testing $i "
+    echo "Checking headers via $i"
+    # Get the headers of the site, bypassing DNS resolution and querying domain via IP directly
+    curl.exe -svko NUL https://$domain --connect-to ::$i --max-time 3 --stderr -
+    # Ping the IP
+    echo ""
+    echo "Checking ping to $i"
+    ping -n 4 $i
+    # Skip traceroute if ping succeeds
+    if ($LASTEXITCODE -ne 0) {
+     echo ""
+     echo "Checking tracert to $i"
+      tracert -w 1 -h 30 $i
+    }
+    echo "+---------------------------------------"
+    echo ""
   }
-  echo "+---------------------------------------"
-  echo ""
 }
 
 # Resolve affected domain
